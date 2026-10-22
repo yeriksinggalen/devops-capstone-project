@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: accounts
-          image: us.icr.io/sn-labs-yerikafriant/accounts:1
+          image: image-registry.openshift-image-registry.svc:5000/sn-labs-yerikafriant/accounts:cd
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

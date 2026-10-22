@@ -13,6 +13,7 @@ spec:
     - name: pipeline-workspace
   params:
     - name: repo-url
+    - name: build-image
     - name: branch
       default: main
   tasks:
@@ -36,3 +37,60 @@ spec:
         value: $(params.branch)
       runAfter:
         - init
+
+    - name: lint
+      taskRef:
+        name: flake8
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      params:
+        - name: requirements_file
+          value: ""
+        - name: path
+          value: "."
+      runAfter:
+        - clone
+
+    - name: tests
+      taskRef:
+        name: nose
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      runAfter:
+        - clone
+
+    - name: build
+      taskRef:
+        kind: ClusterTask
+        name: buildah
+      params:
+        - name: IMAGE
+          value: $(params.build-image)
+        - name: DOCKERFILE
+          value: ./Dockerfile
+        - name: CONTEXT
+          value: .
+        - name: STORAGE_DRIVER
+          value: vfs
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      runAfter:
+        - lint
+        - tests
+
+    - name: deploy
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+      params:
+        - name: SCRIPT
+          value: |
+            set -eu
+            oc set image deployment/accounts accounts=$(params.build-image)
+            oc rollout restart deployment/accounts
+            oc rollout status deployment/accounts --timeout=180s
+      runAfter:
+        - build
