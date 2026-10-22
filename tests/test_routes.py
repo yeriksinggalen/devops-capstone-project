@@ -212,3 +212,34 @@ class TestAccountService(TestCase):
 
         self.assertEqual(response.status_code, 500)
         self.assertEqual(response.get_json()["error"], "Internal Server Error")
+
+    def test_security_headers(self):
+        """It should return the Talisman security headers."""
+        response = self.client.get("/health")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers.get("X-Frame-Options"),
+            "SAMEORIGIN"
+        )
+        self.assertEqual(
+            response.headers.get("X-Content-Type-Options"),
+            "nosniff"
+        )
+        self.assertIn(
+            "default-src",
+            response.headers.get("Content-Security-Policy", "")
+        )
+
+    def test_cors_headers(self):
+        """It should allow cross-origin requests."""
+        response = self.client.get(
+            "/health",
+            headers={"Origin": "http://localhost:3000"}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers.get("Access-Control-Allow-Origin"),
+            "*"
+        )
