@@ -50,3 +50,12 @@ spec:
           value: "."
       runAfter:
         - clone
+
+    - name: tests
+      taskRef:
+        name: nose
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      runAfter:
+        - clone

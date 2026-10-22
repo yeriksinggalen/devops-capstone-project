@@ -50,3 +50,38 @@ spec:
           rm -rf "${WORKSPACE_SOURCE_PATH}"/..?*
         fi
 
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: nose
+spec:
+  description: Run Accounts unit tests with Nose
+  workspaces:
+    - name: source
+  steps:
+    - name: run-tests
+      image: python:3.9-slim
+      workingDir: $(workspaces.source.path)
+      env:
+        - name: DATABASE_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgresql
+              key: database-user
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgresql
+              key: database-password
+        - name: DATABASE_NAME
+          valueFrom:
+            secretKeyRef:
+              name: postgresql
+              key: database-name
+      script: |
+        #!/bin/sh
+        set -eu
+        export DATABASE_URI="postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@postgresql:5432/${DATABASE_NAME}"
+        python -m pip install --no-cache-dir -r requirements.txt
+        nosetests
