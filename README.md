@@ -1,4 +1,21 @@
-# DevOps Capstone Template
+# DevOps Capstone Project
+## Project Information
+
+**Project Name:** devops-capstone-project
+
+**Course:** IBM DevOps Capstone Project
+
+**Project Description:** This project develops a Customer Accounts microservice using Python and Flask. It demonstrates Agile planning, test-driven development, continuous integration, containerization, and deployment using DevOps tools and practices.
+
+**Project Objectives:**
+- Implement REST API operations for customer accounts.
+- Develop automated tests with a target of at least 95% code coverage.
+- Organize development work using GitHub Issues and a Kanban board.
+- Apply CI/CD practices to build, test, and deploy the application.
+
+**Technology Stack:** Python, Flask, PostgreSQL, GitHub, Docker, Tekton, and OpenShift.
+
+**Project Status:** In Progress.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python 3.9](https://img.shields.io/badge/Python-3.9-green.svg)](https://shields.io/)
