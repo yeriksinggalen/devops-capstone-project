@@ -4,7 +4,7 @@ Account Service
 This microservice handles the lifecycle of Accounts
 """
 # pylint: disable=unused-import
-from flask import jsonify, request, make_response, abort, url_for   # noqa; F401
+from flask import jsonify, request, make_response, abort, url_for  # noqa; F401
 from service.models import Account
 from service.common import status  # HTTP Status Codes
 from . import app  # Import Flask application
@@ -50,12 +50,9 @@ def create_accounts():
     account.deserialize(request.get_json())
     account.create()
     message = account.serialize()
-    location_url = url_for(
-        "get_accounts", account_id=account.id, _external=True
-    )
-    return make_response(
-        jsonify(message), status.HTTP_201_CREATED, {"Location": location_url}
-    )
+    location_url = url_for("get_accounts", account_id=account.id, _external=True)
+    return make_response(jsonify(message), status.HTTP_201_CREATED, {"Location": location_url})
+
 
 ######################################################################
 # LIST ALL ACCOUNTS
@@ -66,12 +63,8 @@ def create_accounts():
 def list_accounts():
     """List accounts, optionally filtered by name."""
     name = request.args.get("name")
-    accounts = (
-        Account.find_by_name(name).all()
-        if name else Account.all()
-    )
+    accounts = Account.find_by_name(name).all() if name else Account.all()
     return jsonify([a.serialize() for a in accounts]), status.HTTP_200_OK
-
 
 
 ######################################################################
@@ -86,7 +79,6 @@ def get_accounts(account_id):
     if account is None:
         abort(status.HTTP_404_NOT_FOUND, "Account not found")
     return jsonify(account.serialize()), status.HTTP_200_OK
-
 
 
 ######################################################################
@@ -106,7 +98,6 @@ def update_accounts(account_id):
     return jsonify(account.serialize()), status.HTTP_200_OK
 
 
-
 ######################################################################
 # DELETE AN ACCOUNT
 ######################################################################
@@ -120,7 +111,6 @@ def delete_accounts(account_id):
         abort(status.HTTP_404_NOT_FOUND, "Account not found")
     account.delete()
     return "", status.HTTP_204_NO_CONTENT
-
 
 
 ######################################################################
