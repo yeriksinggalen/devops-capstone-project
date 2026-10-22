@@ -123,4 +123,147 @@ class TestAccountService(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
-    # ADD YOUR TEST CASES HERE ...
+
+    def test_list_accounts_api(self):
+        """It should list created accounts."""
+        self._create_accounts(3)
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.get_json()), 3)
+
+    def test_list_accounts_empty_api(self):
+        """It should return an empty account list."""
+        response = self.client.get(BASE_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.get_json(), [])
+
+    def test_filter_accounts_by_name_api(self):
+        """It should filter accounts by name."""
+        account = self._create_accounts(1)[0]
+        response = self.client.get(
+            BASE_URL, query_string={"name": account.name}
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.get_json()), 1)
+
+    def test_read_account_api(self):
+        """It should read an account by ID."""
+        account = self._create_accounts(1)[0]
+        response = self.client.get(
+            f"{BASE_URL}/{account.id}"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.get_json()["id"], account.id)
+
+    def test_update_account_api(self):
+        """It should update an account."""
+        account = self._create_accounts(1)[0]
+        payload = account.serialize()
+        payload["name"] = "Updated Customer"
+        response = self.client.put(
+            f"{BASE_URL}/{account.id}", json=payload
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.get_json()["name"], "Updated Customer"
+        )
+        self.assertEqual(response.get_json()["id"], account.id)
+
+    def test_delete_account_api(self):
+        """It should delete an account."""
+        account = self._create_accounts(1)[0]
+        response = self.client.delete(
+            f"{BASE_URL}/{account.id}"
+        )
+        self.assertEqual(
+            response.status_code, status.HTTP_204_NO_CONTENT
+        )
+        response = self.client.get(
+            f"{BASE_URL}/{account.id}"
+        )
+        self.assertEqual(
+            response.status_code, status.HTTP_404_NOT_FOUND
+        )
+
+    def test_missing_account_api(self):
+        """Missing accounts should return 404."""
+        account_id = 999999
+        response = self.client.get(f"{BASE_URL}/{account_id}")
+        self.assertEqual(response.status_code, 404)
+        response = self.client.delete(f"{BASE_URL}/{account_id}")
+        self.assertEqual(response.status_code, 404)
+        response = self.client.put(
+            f"{BASE_URL}/{account_id}",
+            json={
+                "name": "Example",
+                "email": "example@example.com",
+                "address": "Jakarta"
+            }
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_invalid_update_media_type_api(self):
+        """Update should reject non-JSON content."""
+        account = self._create_accounts(1)[0]
+        response = self.client.put(
+            f"{BASE_URL}/{account.id}",
+            data="invalid",
+            content_type="text/plain"
+        )
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+        )
+
+    def test_invalid_update_body_api(self):
+        """Update should reject incomplete account data."""
+        account = self._create_accounts(1)[0]
+        response = self.client.put(
+            f"{BASE_URL}/{account.id}",
+            json={"name": "Incomplete"}
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_create_location_header_api(self):
+        """Create should return the new account URL."""
+        account = AccountFactory()
+        response = self.client.post(
+            BASE_URL, json=account.serialize()
+        )
+        self.assertEqual(response.status_code, 201)
+        account_id = response.get_json()["id"]
+        location = response.headers.get("Location", "")
+        self.assertTrue(
+            location.endswith(f"{BASE_URL}/{account_id}")
+        )
+
+    def test_method_not_allowed_api(self):
+        """It should return HTTP 405 for invalid methods."""
+        response = self.client.post("/health")
+        self.assertEqual(response.status_code, 405)
+        self.assertEqual(
+            response.get_json()["error"],
+            "Method not Allowed"
+        )
+
+    def test_internal_server_error_api(self):
+        """It should handle an unexpected server error."""
+        from unittest.mock import patch
+
+        previous = app.config.get("PROPAGATE_EXCEPTIONS")
+        app.config["PROPAGATE_EXCEPTIONS"] = False
+
+        try:
+            with patch(
+                "service.routes.Account.all",
+                side_effect=RuntimeError("Simulated failure")
+            ):
+                response = self.client.get(BASE_URL)
+        finally:
+            app.config["PROPAGATE_EXCEPTIONS"] = previous
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(
+            response.get_json()["error"],
+            "Internal Server Error"
+        )
